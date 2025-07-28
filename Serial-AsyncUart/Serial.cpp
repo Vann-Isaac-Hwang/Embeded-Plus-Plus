@@ -24,7 +24,7 @@ Serial::~Serial()
         InstancePool.end());
 }
 
-HAL_StatusTypeDef Serial::Serial_Init(void)
+HAL_StatusTypeDef Serial::Init(void)
 {
     return HAL_OK;
 }
@@ -65,6 +65,7 @@ char *Serial::getBuffer()
 void Serial::Receive_IT(uint16_t size)
 {
     receiveSize = size;
+    Buffer[size] = '\0'; // Ensure the buffer is null-terminated
     HAL_UART_Receive_IT(uartHandle, reinterpret_cast<uint8_t *>(Buffer), size);
 }
 
@@ -73,9 +74,10 @@ int Serial::getReceiveSize()
     return receiveSize;
 }
 
-std::vector<Serial*> Serial::InstancePool;
+std::vector<Serial *> Serial::InstancePool;
 
-std::vector<Serial*> Serial::getInstancePool(){
+std::vector<Serial *> Serial::getInstancePool()
+{
     return Serial::InstancePool;
 }
 
@@ -84,8 +86,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     for (auto &instance : Serial::getInstancePool())
     {
         if (huart->Instance == instance->getUartHandle()->Instance)
-            if (instance->RxCallback != nullptr)
-                instance->RxCallback();
-        instance->Receive_IT(instance->getReceiveSize());
+        {
+            if (instance->RxCallback)   instance->RxCallback();
+            instance->Receive_IT(instance->getReceiveSize());
+        }
     }
 }

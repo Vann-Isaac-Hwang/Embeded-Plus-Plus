@@ -8,16 +8,16 @@
 class Serial
 {
 private:
+using RxCallback_t = std::function<void()>;
     UART_HandleTypeDef *uartHandle;
     HAL_StatusTypeDef Serial_Write(uint8_t *data);
     char Buffer[256]; // Buffer for receiving data, adjust size as needed
     int receiveSize = 0;
-    using RxCallback_t = std::function<void()>;
     static std::vector<Serial *> InstancePool;
 public:
     Serial(UART_HandleTypeDef *uart);
     ~Serial();
-    HAL_StatusTypeDef Serial_Init(void);
+    HAL_StatusTypeDef Init(void);
     HAL_StatusTypeDef Sprintf(const char *format, ...);
     RxCallback_t RxCallback = nullptr;
     UART_HandleTypeDef* getUartHandle();
