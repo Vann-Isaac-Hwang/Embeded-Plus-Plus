@@ -12,8 +12,8 @@ extern "C" {
 #define RDA5820_I2C_ADDR_WRITE  0x22
 #define RDA5820_I2C_ADDR_READ   0x23
 
-// --- �Ĵ�����ַ (Register Addresses) ---
-#define RDA5820_R00		0X00  // Chip ID Register (RO), Ӧ�ö��� 0x5820
+// --- Register Addresses ---
+#define RDA5820_R00		0X00  // Chip ID Register (RO), 0x5820 by default
 #define RDA5820_R02		0X02  // Control and Status Register 1
 #define RDA5820_R03		0X03  // Channel and Tuning Register
 #define RDA5820_R04		0X04  // Control and Status Register 2

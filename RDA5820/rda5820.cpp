@@ -1,10 +1,7 @@
 #include "rda5820.hpp"
 #include <stdio.h>
 
-
-
 static uint16_t RDA5820_Regs[0x43];
-
 
 RDA5820::RDA5820(I2C_HandleTypeDef* i2c) : i2cHandle(i2c)
 {
@@ -89,7 +86,8 @@ HAL_StatusTypeDef RDA5820::RDA5820_Init(void)
     {
         RDA5820_WR_Reg(RDA5820_R02, RDA5820_R02_SOFTRESET);
         HAL_Delay(50);
-        uint16_t r02_val = RDA5820_R02_ENABLE; 
+        // Use 0xC001 instead of RDA5820_R02_ENABLE
+        uint16_t r02_val = 0xC001;   // ENABLE + DMUTE + DHIZ
         RDA5820_WR_Reg(RDA5820_R02, r02_val);
         HAL_Delay(600);
 
@@ -186,4 +184,44 @@ uint8_t RDA5820::RDA5820_Rssi_Get(void)
 	uint16_t temp;
 	temp=RDA5820_RD_Reg(0X0B);	
 	return temp>>9;              
+}
+
+void RDA5820::RDA5820_Band_Set(uint8_t band)
+{
+    uint16_t temp = RDA5820_RD_Reg(RDA5820_R03);
+    temp &= ~(0x03 << 2);   // 清除 band 位 (bit2, bit3)
+    temp |= (band & 0x03) << 2;
+    RDA5820_WR_Reg(RDA5820_R03, temp);
+}
+
+void RDA5820::RDA5820_Space_Set(uint8_t spc)
+{
+    uint16_t temp = RDA5820_RD_Reg(RDA5820_R03);
+    temp &= ~0x03;           // 清除 spacing 位 (bit0, bit1)
+    temp |= (spc & 0x03);
+    RDA5820_WR_Reg(RDA5820_R03, temp);
+}
+
+void RDA5820::RDA5820_TxPAG_Set(uint8_t gain)
+{
+    uint16_t temp = RDA5820_RD_Reg(RDA5820_R42);
+    temp &= 0xFFC0;
+    temp |= (gain & 0x3F);
+    RDA5820_WR_Reg(RDA5820_R42, temp);
+}
+
+void RDA5820::RDA5820_TxPGA_Set(uint8_t gain)
+{
+    uint16_t temp = RDA5820_RD_Reg(RDA5820_R42);
+    temp &= 0xF8FF;
+    temp |= ((gain & 0x07) << 8);
+    RDA5820_WR_Reg(RDA5820_R42, temp);
+}
+
+void RDA5820::RDA5820_Rssi_Set(uint8_t rssi)
+{
+    uint16_t temp = RDA5820_RD_Reg(RDA5820_R05);
+    temp &= 0x80FF;
+    temp |= ((uint16_t)rssi << 8);
+    RDA5820_WR_Reg(RDA5820_R05, temp);
 }
