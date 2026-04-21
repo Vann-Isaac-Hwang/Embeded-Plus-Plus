@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "main.h" 
+#include "main.h"
 
 
 #define RDA5820_TIMEOUT_MS      100
@@ -60,21 +60,23 @@ extern "C" {
 class RDA5820
 {
 private:
-    I2C_HandleTypeDef* i2cHandle; 
+    I2C_HandleTypeDef* i2cHandle;
 
+public:
     HAL_StatusTypeDef _RDA5820_HW_WriteReg(uint8_t addr, uint16_t val);
     HAL_StatusTypeDef _RDA5820_HW_ReadReg(uint8_t addr, uint16_t *pVal);
     HAL_StatusTypeDef _RDA5820_SyncCache(void);
     void RDA5820_WR_Reg(uint8_t addr, uint16_t val);
     uint16_t RDA5820_RD_Reg(uint8_t addr);
-public:
     RDA5820(I2C_HandleTypeDef* i2c);
     ~RDA5820();
     HAL_StatusTypeDef RDA5820_Init(void);
+    void RDA5820_Set_fRange(uint16_t f_min, uint16_t f_max);
     void RDA5820_RX_Mode(void);
     void RDA5820_TX_Mode(void);
+    void SetMaxPower(void);
     uint8_t RDA5820_Rssi_Get(void);
-    void RDA5820_Mute_Set(uint8_t mute);
+    void RDA5820_Mute_Set(uint8_t unmute);
     void RDA5820_Rssi_Set(uint8_t rssi);
     void RDA5820_Vol_Set(uint8_t vol);
     void RDA5820_TxPAG_Set(uint8_t gain);
@@ -82,6 +84,8 @@ public:
     void RDA5820_Band_Set(uint8_t band);
     void RDA5820_Space_Set(uint8_t spc);
     void RDA5820_Freq_Set(uint16_t freq);
+
+    void RDA5820_Simple_TX(uint16_t freq);
 };
 
 

@@ -34,7 +34,7 @@ uint16_t RDA5820::RDA5820_RD_Reg(uint8_t addr)
 HAL_StatusTypeDef RDA5820::_RDA5820_HW_WriteReg(uint8_t addr, uint16_t val)
 {
     uint8_t data_to_send[2];
-    data_to_send[0] = (uint8_t)(val >> 8);   
+    data_to_send[0] = (uint8_t)(val >> 8);
     data_to_send[1] = (uint8_t)(val & 0xFF);
 
     return HAL_I2C_Mem_Write(i2cHandle, RDA5820_I2C_ADDR_WRITE, addr, I2C_MEMADD_SIZE_8BIT, data_to_send, 2, RDA5820_TIMEOUT_MS);
@@ -43,7 +43,7 @@ HAL_StatusTypeDef RDA5820::_RDA5820_HW_WriteReg(uint8_t addr, uint16_t val)
 HAL_StatusTypeDef RDA5820::_RDA5820_SyncCache(void)
 {
     HAL_StatusTypeDef status = HAL_OK;
-    for (uint8_t addr = 0x02; addr <= 0x07; addr++) 
+    for (uint8_t addr = 0x02; addr <= 0x07; addr++)
     {
         status = _RDA5820_HW_ReadReg(addr, &RDA5820_Regs[addr]);
         if (status != HAL_OK) return status;
@@ -61,7 +61,7 @@ HAL_StatusTypeDef RDA5820::_RDA5820_HW_ReadReg(uint8_t addr, uint16_t *pVal)
 {
     uint8_t received_data[2];
     HAL_StatusTypeDef status;
-    
+
     status = HAL_I2C_Mem_Read(i2cHandle, RDA5820_I2C_ADDR_READ, addr, I2C_MEMADD_SIZE_8BIT, received_data, 2, RDA5820_TIMEOUT_MS);
 
     if (status == HAL_OK)
@@ -77,9 +77,9 @@ HAL_StatusTypeDef RDA5820::RDA5820_Init(void)
 
     if (_RDA5820_HW_ReadReg(RDA5820_R00, &chip_id) != HAL_OK)
     {
-        return HAL_ERROR; 
+        return HAL_ERROR;
     }
-    
+
     printf("RDA5820 Chip ID: 0x%04X\r\n", chip_id);
 
     if (chip_id == 0x5820 || chip_id == 0x5805)
@@ -99,7 +99,14 @@ HAL_StatusTypeDef RDA5820::RDA5820_Init(void)
         return HAL_OK;
     }
 
-    return HAL_ERROR; 
+    return HAL_ERROR;
+}
+
+
+void RDA5820::RDA5820_Set_fRange(uint16_t f_min, uint16_t f_max) // Scale: *0.1 MHz
+{
+    this->RDA5820_WR_Reg(RDA5820_R53, 800);   // 底部 80MHz
+    this->RDA5820_WR_Reg(RDA5820_R54, 1080);  // 顶部 108MHz
 }
 
 void RDA5820::RDA5820_RX_Mode(void)
@@ -113,8 +120,13 @@ void RDA5820::RDA5820_TX_Mode(void)
 {
     uint16_t temp = RDA5820_Regs[RDA5820_R40];
     temp &= 0xFFF0;
-    temp |= 0x0001; 
+    temp |= 0x0001;
     RDA5820_WR_Reg(RDA5820_R40, temp);
+}
+
+void RDA5820::SetMaxPower(void)
+{
+    RDA5820_WR_Reg(RDA5820_R42, 0x0F);  // 最大功率
 }
 
 void RDA5820::RDA5820_Vol_Set(uint8_t vol)
@@ -125,10 +137,10 @@ void RDA5820::RDA5820_Vol_Set(uint8_t vol)
     RDA5820_WR_Reg(RDA5820_R05, temp);
 }
 
-void RDA5820::RDA5820_Mute_Set(uint8_t mute)
+void RDA5820::RDA5820_Mute_Set(uint8_t unmute) // unmute=1 is unmuted status.
 {
     uint16_t temp = RDA5820_Regs[RDA5820_R02];
-    if (mute)
+    if (unmute)
     {
         temp |= RDA5820_R02_DMUTE;
     }
@@ -144,17 +156,17 @@ void RDA5820::RDA5820_Freq_Set(uint16_t freq)
     uint16_t temp;
     uint8_t spc_val = 0, band = 0;
     uint16_t f_bottom, chan;
-    
+
     temp = RDA5820_Regs[RDA5820_R03];
     band = (temp >> 2) & 0x03;
     spc_val = temp & 0x03;
 
     uint8_t spacing_khz;
-    if(spc_val == 0) spacing_khz = 10;     
+    if(spc_val == 0) spacing_khz = 10;
     else if(spc_val == 1) spacing_khz = 20;
-    else spacing_khz = 5;                
+    else spacing_khz = 5;
 
-    if (band == 0) f_bottom = 8700; 
+    if (band == 0) f_bottom = 8700;
     else if (band == 1 || band == 2) f_bottom = 7600;
     else
     {
@@ -164,13 +176,13 @@ void RDA5820::RDA5820_Freq_Set(uint16_t freq)
     if (freq < f_bottom) return;
 
     chan = (freq - f_bottom) / spacing_khz;
-    chan &= 0x03FF; 
+    chan &= 0x03FF;
 
-    temp = RDA5820_Regs[RDA5820_R03]; 
-    temp &= 0x003F; 
+    temp = RDA5820_Regs[RDA5820_R03];
+    temp &= 0x003F;
     temp |= (chan << 6);
-    temp |= RDA5820_R03_TUNE; 
-    
+    temp |= RDA5820_R03_TUNE;
+
     RDA5820_WR_Reg(RDA5820_R03, temp);
 
     while ((RDA5820_RD_Reg(RDA5820_R0B) & RDA5820_R0B_FM_READY) == 0)
@@ -182,8 +194,8 @@ void RDA5820::RDA5820_Freq_Set(uint16_t freq)
 uint8_t RDA5820::RDA5820_Rssi_Get(void)
 {
 	uint16_t temp;
-	temp=RDA5820_RD_Reg(0X0B);	
-	return temp>>9;              
+	temp=RDA5820_RD_Reg(0X0B);
+	return temp>>9;
 }
 
 void RDA5820::RDA5820_Band_Set(uint8_t band)
@@ -224,4 +236,18 @@ void RDA5820::RDA5820_Rssi_Set(uint8_t rssi)
     temp &= 0x80FF;
     temp |= ((uint16_t)rssi << 8);
     RDA5820_WR_Reg(RDA5820_R05, temp);
+}
+
+void RDA5820::RDA5820_Simple_TX(uint16_t freq) // *0.01 MHz
+{
+    // 配置自定义频段 80~108 MHz
+    RDA5820_Set_fRange(800, 1080);	// Set freq range to [80, 108]
+    RDA5820_Band_Set(3);                // 用户自定义
+    RDA5820_Space_Set(0);               // 100kHz 步进
+
+    // 发射模式
+    RDA5820_TX_Mode();
+    SetMaxPower();
+    RDA5820_Mute_Set(1);                // 取消静音
+    RDA5820_Freq_Set(freq);             // 80.00 MHz
 }
